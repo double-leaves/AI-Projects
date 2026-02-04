@@ -32,8 +32,8 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
         content: text.trim(),
         is_completed: false,
       };
-      const response = await api.post<Todo>("/todos", newTodo);
-      set({ todos: [response.data, ...get().todos] });
+      await api.post<Todo>("/todos", newTodo);
+      await get().fetchTodos();
     } catch (error) {
       console.error("Failed to add todo:", error);
     }
@@ -46,11 +46,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
 
       const updatedTodo = { ...todo, is_completed: !todo.is_completed };
       await api.patch<Todo>(`/todos/${id}`, updatedTodo);
-      set({
-        todos: get().todos.map((t) =>
-          t.id === id ? updatedTodo : t
-        ),
-      });
+      await get().fetchTodos();
     } catch (error) {
       console.error("Failed to toggle todo:", error);
     }
@@ -59,7 +55,7 @@ export const useTodoStore = create<TodoState>()((set, get) => ({
   deleteTodo: async (id: number) => {
     try {
       await api.delete(`/todos/${id}`);
-      set({ todos: get().todos.filter((t) => t.id !== id) });
+      await get().fetchTodos();
     } catch (error) {
       console.error("Failed to delete todo:", error);
     }

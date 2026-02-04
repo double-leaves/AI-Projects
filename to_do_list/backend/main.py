@@ -14,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-DATABASE_URL = "sqlite:///backend/database.db"
+DATABASE_URL = "sqlite:///database.db"
 engine = create_engine(DATABASE_URL, echo=True)
 
 
@@ -33,10 +33,11 @@ def get_todos():
 @app.post("/todos", response_model=Todo)
 def create_todo(todo: Todo):
     with Session(engine) as session:
-        session.add(todo)
+        db_todo = Todo(content=todo.content, is_completed=todo.is_completed)
+        session.add(db_todo)
         session.commit()
-        session.refresh(todo)
-        return todo
+        session.refresh(db_todo)
+        return db_todo
 
 
 @app.patch("/todos/{todo_id}", response_model=Todo)

@@ -16,10 +16,14 @@ export const TodoItem = ({ todo }: TodoItemProps) => {
         type="checkbox"
         checked={todo.is_completed}
         onChange={() => toggleTodo(todo.id)}
-        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 focus:ring-2"
+        className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer"
       />
       <span
-        className={`flex-1 ${todo.is_completed ? "line-through text-gray-500" : "text-gray-900"}`}
+        className={`flex-1 transition-all duration-200 ${
+          todo.is_completed
+            ? "line-through text-gray-400 decoration-gray-400 decoration-2"
+            : "text-gray-900"
+        }`}
       >
         {todo.content}
       </span>
