@@ -1,63 +1,71 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import type { Todo, FilterType } from "../types/todo";
-import { saveTodos, loadTodos } from "../utils/storage";
+import api from "../api/client";
 
 interface TodoState {
   todos: Todo[];
   filter: FilterType;
-  addTodo: (text: string) => void;
-  toggleTodo: (id: string) => void;
-  deleteTodo: (id: string) => void;
+  fetchTodos: () => Promise<void>;
+  addTodo: (text: string) => Promise<void>;
+  toggleTodo: (id: number) => Promise<void>;
+  deleteTodo: (id: number) => Promise<void>;
   setFilter: (filter: FilterType) => void;
 }
 
-export const useTodoStore = create<TodoState>()(
-  persist(
-    (set, get) => ({
-      todos: [],
-      filter: "All",
+export const useTodoStore = create<TodoState>()((set, get) => ({
+  todos: [],
+  filter: "All",
 
-      addTodo: (text: string) => {
-        const newTodo: Todo = {
-          id: Date.now().toString(),
-          text: text.trim(),
-          completed: false,
-          createdAt: Date.now(),
-        };
+  fetchTodos: async () => {
+    try {
+      const response = await api.get<Todo[]>("/todos");
+      set({ todos: response.data });
+    } catch (error) {
+      console.error("Failed to fetch todos:", error);
+    }
+  },
 
-        const newTodos = [newTodo, ...get().todos];
-        set({ todos: newTodos });
-        saveTodos(newTodos);
-      },
+  addTodo: async (text: string) => {
+    try {
+      const newTodo: Todo = {
+        id: 0,
+        content: text.trim(),
+        is_completed: false,
+      };
+      const response = await api.post<Todo>("/todos", newTodo);
+      set({ todos: [response.data, ...get().todos] });
+    } catch (error) {
+      console.error("Failed to add todo:", error);
+    }
+  },
 
-      toggleTodo: (id: string) => {
-        const newTodos = get().todos.map((todo) =>
-          todo.id === id ? { ...todo, completed: !todo.completed } : todo,
-        );
-        set({ todos: newTodos });
-        saveTodos(newTodos);
-      },
+  toggleTodo: async (id: number) => {
+    try {
+      const todo = get().todos.find((t) => t.id === id);
+      if (!todo) return;
 
-      deleteTodo: (id: string) => {
-        const newTodos = get().todos.filter((todo) => todo.id !== id);
-        set({ todos: newTodos });
-        saveTodos(newTodos);
-      },
+      const updatedTodo = { ...todo, is_completed: !todo.is_completed };
+      await api.patch<Todo>(`/todos/${id}`, updatedTodo);
+      set({
+        todos: get().todos.map((t) =>
+          t.id === id ? updatedTodo : t
+        ),
+      });
+    } catch (error) {
+      console.error("Failed to toggle todo:", error);
+    }
+  },
 
-      setFilter: (filter: FilterType) => {
-        set({ filter });
-      },
-    }),
-    {
-      name: "todo-store",
-      onRehydrateStorage: () => {
-        return (state) => {
-          if (state) {
-            state.todos = loadTodos();
-          }
-        };
-      },
-    },
-  ),
-);
+  deleteTodo: async (id: number) => {
+    try {
+      await api.delete(`/todos/${id}`);
+      set({ todos: get().todos.filter((t) => t.id !== id) });
+    } catch (error) {
+      console.error("Failed to delete todo:", error);
+    }
+  },
+
+  setFilter: (filter: FilterType) => {
+    set({ filter });
+  },
+}));

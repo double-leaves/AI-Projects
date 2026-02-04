@@ -1,8 +1,7 @@
 export interface Todo {
-  id: string;
-  text: string;
-  completed: boolean;
-  createdAt: number;
+  id: number;
+  content: string;
+  is_completed: boolean;
 }
 
-export type FilterType = 'All' | 'Active' | 'Completed';
+export type FilterType = "All" | "Active" | "Completed";

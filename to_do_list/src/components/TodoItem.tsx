@@ -14,14 +14,14 @@ export const TodoItem = ({ todo }: TodoItemProps) => {
     <div className="flex items-center gap-3 p-3 bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
       <input
         type="checkbox"
-        checked={todo.completed}
+        checked={todo.is_completed}
         onChange={() => toggleTodo(todo.id)}
         className="w-5 h-5 text-blue-600 rounded focus:ring-blue-500 focus:ring-2"
       />
       <span
-        className={`flex-1 ${todo.completed ? "line-through text-gray-500" : "text-gray-900"}`}
+        className={`flex-1 ${todo.is_completed ? "line-through text-gray-500" : "text-gray-900"}`}
       >
-        {todo.text}
+        {todo.content}
       </span>
       <button
         onClick={() => deleteTodo(todo.id)}
