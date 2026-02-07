@@ -14,8 +14,10 @@ app.use(express.urlencoded({ extended: true }));
 // 路由
 const cartRoutes = require('./routes/cart');
 const orderRoutes = require('./routes/order');
+const addressRoutes = require('./routes/address');
 app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/addresses', addressRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

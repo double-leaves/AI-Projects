@@ -20,13 +20,15 @@ web_shop/
 │   ├── config/
 │   │   └── database.js    # 数据库配置
 │   ├── controllers/
-│   │   ├── cartController.js  # 购物车控制器
-│   │   └── orderController.js # 订单控制器
+│   │   ├── cartController.js     # 购物车控制器
+│   │   ├── orderController.js    # 订单控制器
+│   │   └── addressController.js  # 地址控制器
 │   ├── middleware/
 │   │   └── auth.js        # JWT 认证中间件
 │   ├── routes/
 │   │   ├── cart.js        # 购物车路由
-│   │   └── order.js       # 订单路由
+│   │   ├── order.js       # 订单路由
+│   │   └── address.js     # 地址路由
 │   └── server.js          # 服务器入口
 ├── scripts/
 │   └── generateToken.js   # JWT Token 生成脚本
@@ -413,6 +415,146 @@ Authorization: Bearer <token>
 
 ---
 
+### 地址管理 API
+
+#### 1. 添加地址
+
+**请求**
+
+```http
+POST /api/addresses
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "name": "张三",
+  "phone": "13800138000",
+  "province": "广东省",
+  "city": "深圳市",
+  "district": "南山区",
+  "detail": "科技园南区",
+  "is_default": true
+}
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "message": "地址添加成功",
+  "data": {
+    "address_id": 1
+  }
+}
+```
+
+**功能说明**：
+- 接收收货人信息
+- 如果设置为默认地址，自动将其他地址的 `is_default` 设为 `false`
+- 如果是第一个地址，自动设为默认地址
+- 使用数据库事务确保数据一致性
+
+---
+
+#### 2. 获取地址列表
+
+**请求**
+
+```http
+GET /api/addresses
+Authorization: Bearer <token>
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "data": {
+    "addresses": [
+      {
+        "id": 1,
+        "name": "张三",
+        "phone": "13800138000",
+        "province": "广东省",
+        "city": "深圳市",
+        "district": "南山区",
+        "detail": "科技园南区",
+        "is_default": true,
+        "created_at": "2026-02-07T15:30:45.000Z"
+      }
+    ],
+    "total": 1
+  }
+}
+```
+
+**功能说明**：
+- 返回用户的地址列表
+- 默认地址排在最前面
+- 按创建时间倒序排列
+
+---
+
+#### 3. 更新地址
+
+**请求**
+
+```http
+PUT /api/addresses/:id
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "name": "李四",
+  "phone": "13900139000",
+  "is_default": true
+}
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "message": "地址更新成功"
+}
+```
+
+**功能说明**：
+- 更新指定地址的信息
+- 支持部分更新（只更新提供的字段）
+- 如果设置为默认地址，自动将其他地址设为非默认
+- 使用数据库事务确保数据一致性
+
+---
+
+#### 4. 删除地址
+
+**请求**
+
+```http
+DELETE /api/addresses/:id
+Authorization: Bearer <token>
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "message": "地址删除成功"
+}
+```
+
+**功能说明**：
+- 删除指定地址
+- 如果删除的是默认地址，自动将第一个地址设为默认
+- 使用数据库事务确保数据一致性
+
+---
+
 ### 错误响应
 
 所有 API 的错误响应格式：
@@ -513,6 +655,48 @@ curl -X PUT http://localhost:3000/api/orders/1/cancel \
   -H "Authorization: Bearer <your_token>"
 ```
 
+### 地址接口测试
+
+1. **添加地址**
+
+```bash
+curl -X POST http://localhost:3000/api/addresses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_token>" \
+  -d '{
+    "name": "张三",
+    "phone": "13800138000",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "detail": "科技园南区",
+    "is_default": true
+  }'
+```
+
+2. **获取地址列表**
+
+```bash
+curl http://localhost:3000/api/addresses \
+  -H "Authorization: Bearer <your_token>"
+```
+
+3. **更新地址**
+
+```bash
+curl -X PUT http://localhost:3000/api/addresses/1 \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_token>" \
+  -d '{"name": "李四", "phone": "13900139000"}'
+```
+
+4. **删除地址**
+
+```bash
+curl -X DELETE http://localhost:3000/api/addresses/1 \
+  -H "Authorization: Bearer <your_token>"
+```
+
 ### 使用 Postman 测试
 
 1. 导入 Postman Collection（可选）
@@ -553,7 +737,7 @@ curl -X PUT http://localhost:3000/api/orders/1/cancel \
 - [ ] 实现用户注册/登录 API
 - [ ] 实现商品管理 API
 - [x] 实现订单管理 API
-- [ ] 添加地址管理 API
+- [x] 添加地址管理 API
 - [ ] 添加单元测试
 - [ ] 添加接口文档（Swagger）
 - [ ] 实现支付功能
