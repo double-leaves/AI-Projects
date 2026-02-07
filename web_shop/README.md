@@ -1,6 +1,6 @@
 # Web Shop - 在线商城后端
 
-基于 Node.js + Express + MySQL 的在线商城后端系统，实现了购物车功能。
+基于 Node.js + Express + MySQL 的在线商城后端系统，实现了购物车和订单功能。
 
 ## 技术栈
 
@@ -20,12 +20,16 @@ web_shop/
 │   ├── config/
 │   │   └── database.js    # 数据库配置
 │   ├── controllers/
-│   │   └── cartController.js  # 购物车控制器
+│   │   ├── cartController.js  # 购物车控制器
+│   │   └── orderController.js # 订单控制器
 │   ├── middleware/
 │   │   └── auth.js        # JWT 认证中间件
 │   ├── routes/
-│   │   └── cart.js        # 购物车路由
+│   │   ├── cart.js        # 购物车路由
+│   │   └── order.js       # 订单路由
 │   └── server.js          # 服务器入口
+├── scripts/
+│   └── generateToken.js   # JWT Token 生成脚本
 ├── .env.example           # 环境变量示例
 ├── .gitignore
 ├── package.json
@@ -243,6 +247,172 @@ Authorization: Bearer <token>
 
 ---
 
+### 订单 API
+
+#### 1. 创建订单
+
+**请求**
+
+```http
+POST /api/orders
+Content-Type: application/json
+Authorization: Bearer <token>
+
+{
+  "address_id": 1,
+  "cart_item_ids": [1, 2, 3]
+}
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "message": "订单创建成功",
+  "data": {
+    "order_id": 1,
+    "order_no": "1707327845123456",
+    "total_price": "25997.00",
+    "items_count": 3
+  }
+}
+```
+
+**功能说明**：
+- 接收收货地址 ID 和购物车商品 ID 列表
+- 检查库存是否充足
+- 自动计算总价
+- 生成唯一订单号（时间戳 + 随机数）
+- 创建订单和订单商品记录
+- 自动扣减库存
+- 清空购物车中已下单的商品
+- 使用数据库事务确保数据一致性
+
+---
+
+#### 2. 获取订单列表
+
+**请求**
+
+```http
+GET /api/orders?status=pending
+Authorization: Bearer <token>
+```
+
+**查询参数**：
+- `status` (可选): 订单状态筛选
+  - `pending` - 待支付
+  - `paid` - 已支付
+  - `shipped` - 已发货
+  - `completed` - 已完成
+  - `cancelled` - 已取消
+
+**响应**
+
+```json
+{
+  "success": true,
+  "data": {
+    "orders": [
+      {
+        "id": 1,
+        "order_no": "1707327845123456",
+        "total_price": "25997.00",
+        "status": "pending",
+        "created_at": "2026-02-07T15:30:45.000Z",
+        "updated_at": "2026-02-07T15:30:45.000Z",
+        "items_count": 3
+      }
+    ],
+    "total": 1
+  }
+}
+```
+
+**功能说明**：
+- 返回用户的订单列表
+- 支持按状态筛选
+- 包含订单商品数量
+
+---
+
+#### 3. 获取订单详情
+
+**请求**
+
+```http
+GET /api/orders/:id
+Authorization: Bearer <token>
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "order_no": "1707327845123456",
+    "total_price": "25997.00",
+    "status": "pending",
+    "created_at": "2026-02-07T15:30:45.000Z",
+    "updated_at": "2026-02-07T15:30:45.000Z",
+    "receiver_name": "张三",
+    "receiver_phone": "13800138000",
+    "province": "广东省",
+    "city": "深圳市",
+    "district": "南山区",
+    "address_detail": "科技园南区",
+    "items": [
+      {
+        "id": 1,
+        "product_id": 1,
+        "quantity": 2,
+        "price": "7999.00",
+        "name": "iPhone 15 Pro",
+        "images": ["https://via.placeholder.com/300"],
+        "category": "手机",
+        "subtotal": "15998.00"
+      }
+    ]
+  }
+}
+```
+
+**功能说明**：
+- 返回订单详细信息
+- 包含收货地址信息
+- 包含订单商品列表
+
+---
+
+#### 4. 取消订单
+
+**请求**
+
+```http
+PUT /api/orders/:id/cancel
+Authorization: Bearer <token>
+```
+
+**响应**
+
+```json
+{
+  "success": true,
+  "message": "订单已取消"
+}
+```
+
+**功能说明**：
+- 只能取消待支付（pending）状态的订单
+- 自动恢复库存
+- 更新订单状态为已取消（cancelled）
+- 使用数据库事务确保数据一致性
+
+---
+
 ### 错误响应
 
 所有 API 的错误响应格式：
@@ -306,6 +476,43 @@ curl -X DELETE http://localhost:3000/api/cart/1 \
   -H "Authorization: Bearer <your_token>"
 ```
 
+### 订单接口测试
+
+1. **创建订单**
+
+```bash
+curl -X POST http://localhost:3000/api/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <your_token>" \
+  -d '{"address_id": 1, "cart_item_ids": [1, 2]}'
+```
+
+2. **获取订单列表**
+
+```bash
+# 获取所有订单
+curl http://localhost:3000/api/orders \
+  -H "Authorization: Bearer <your_token>"
+
+# 按状态筛选
+curl "http://localhost:3000/api/orders?status=pending" \
+  -H "Authorization: Bearer <your_token>"
+```
+
+3. **获取订单详情**
+
+```bash
+curl http://localhost:3000/api/orders/1 \
+  -H "Authorization: Bearer <your_token>"
+```
+
+4. **取消订单**
+
+```bash
+curl -X PUT http://localhost:3000/api/orders/1/cancel \
+  -H "Authorization: Bearer <your_token>"
+```
+
 ### 使用 Postman 测试
 
 1. 导入 Postman Collection（可选）
@@ -345,7 +552,8 @@ curl -X DELETE http://localhost:3000/api/cart/1 \
 
 - [ ] 实现用户注册/登录 API
 - [ ] 实现商品管理 API
-- [ ] 实现订单管理 API
+- [x] 实现订单管理 API
+- [ ] 添加地址管理 API
 - [ ] 添加单元测试
 - [ ] 添加接口文档（Swagger）
 - [ ] 实现支付功能

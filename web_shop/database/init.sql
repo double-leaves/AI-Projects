@@ -101,3 +101,8 @@ INSERT INTO products (name, description, price, stock, images, category) VALUES
 ('iPad Air', '10.9英寸平板电脑，配备 M1 芯片', 4799.00, 60, '["https://via.placeholder.com/300"]', '平板'),
 ('Apple Watch Series 9', '智能手表，健康监测功能', 2999.00, 80, '["https://via.placeholder.com/300"]', '手表')
 ON DUPLICATE KEY UPDATE name=name;
+
+-- 插入测试地址
+INSERT INTO addresses (user_id, name, phone, province, city, district, detail, is_default) VALUES
+(1, '张三', '13800138000', '广东省', '深圳市', '南山区', '科技园南区', TRUE)
+ON DUPLICATE KEY UPDATE name=name;
